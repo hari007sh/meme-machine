@@ -1,11 +1,11 @@
-# Runs on the server. The app joins the "edge" network shared with the Hookboard Cloudflare tunnel;
+# The app joins the "edge" network shared with the Cloudflare tunnel connector;
 # OpenSearch stays on an internal network and is never published to the host or the internet.
 name: meme-machine
 services:
   app:
     container_name: meme-app
     build: ..
-    user: "1026:100"   # the server user that owns ./data
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"   # owner of ./data on the host
     env_file: ../.env
     volumes:
       - ../data:/data

@@ -24,7 +24,7 @@ export type PipelineDeps = {
 function withDeadline<T>(ms: number, work: Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new BusyError("That took too long. The GPU is busy.")), ms);
+    timer = setTimeout(() => reject(new BusyError("That took too long. Inference is at capacity.")), ms);
   });
   return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
 }

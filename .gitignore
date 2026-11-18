@@ -12,3 +12,4 @@ data/memes
 .e2e-data
 test-results
 playwright-report
+ops/

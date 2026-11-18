@@ -5,8 +5,8 @@
 You describe a moment ("when the standup could have been an email"), and Meme Machine finds the
 meme template that *means* that, writes the captions, and gives you a link that unfurls as the image.
 
-It's a working example of retrieval with **vector search + embeddings + a self-hosted LLM**, running on
-real hardware with real users, with live numbers at [/stats](https://memes.hookboard.net/stats) and a
+It's a production retrieval system — **vector search + multimodal embeddings + a self-hosted LLM** — serving
+real users, with live numbers at [/stats](https://memes.hookboard.net/stats) and a
 dated [build log](https://memes.hookboard.net/log).
 
 ## How a meme gets made
@@ -14,9 +14,9 @@ dated [build log](https://memes.hookboard.net/log).
 ```
 "when the standup could have been an email"
         │
-        ▼  1. safety check ─────────── Qwen3 14B (self-hosted, GPU)
+        ▼  1. safety check ─────────── blocklist + Qwen3 14B (self-hosted GPU inference)
         ▼  2. embed ────────────────── Amazon Titan Multimodal Embeddings G1 (Bedrock, ca-central-1) → 1024-d vector
-        ▼  3. hybrid search ────────── OpenSearch 2.19 k-NN (HNSW, cosine) on a Docker server
+        ▼  3. hybrid search ────────── OpenSearch 2.19 k-NN (HNSW, cosine)
         │       score = meaning-vector k-NN ×1.0 + image-vector k-NN ×0.6 + BM25 keywords ×0.3
         ▼  4. pick + caption ───────── Qwen3 picks 1 of the top 5 and writes each box (JSON schema-constrained)
         ▼  5. safety check (output)
@@ -32,20 +32,23 @@ written by the LLM). A text query can match either.
 
 | Piece | Runs on | Notes |
 |---|---|---|
-| Web + API (Node 24, TypeScript, Express, React) | Docker server (Docker) | SQLite for memes/events, PNGs on disk |
-| OpenSearch 2.19 | Docker server (Docker) | internal network only, never exposed |
-| LLM: Qwen3 14B via Ollama | GPU inference server, GPU | reached over private network; shares the GPU with other GPU workloads (other GPU workloads wins) |
+| Web + API (Node 24, TypeScript, Express, React) | Docker | SQLite for memes/events, PNGs on a persistent volume |
+| OpenSearch 2.19 | Docker | private network only, never exposed |
+| LLM: Qwen3 14B via Ollama | dedicated NVIDIA GPU inference server | private network only; bounded queue + load shedding |
 | Embeddings: Titan Multimodal G1 | AWS Bedrock ca-central-1 | dedicated IAM user allowed only `bedrock:InvokeModel` on that one model |
-| Public edge | Cloudflare Tunnel | no open ports at home; images cached at the edge |
+| Public edge | Cloudflare (Tunnel + CDN) | no open inbound ports; images cached at the edge |
 
-**When the GPU is busy** (other GPU workloads rendering video), requests queue (2 at a time, 20 waiting). Past that,
-or if the LLM doesn't answer in 45 s, the API returns `503 busy` with `Retry-After: 60`, and the UI says so.
+**Under load**, inference requests queue (2 at a time, 20 waiting, 20 s max wait). Past that, or if a request
+can't finish within its 45 s budget, the API sheds load with `503 busy` + `Retry-After: 60`, the model client
+backs off for 30 s, and the UI says so. Per-visitor limits (IPv6 grouped by /64) count only successful memes,
+and a global daily cap bounds cost.
 
 ## Safety
 
 Satire of public figures is allowed. Refused: slurs, sexual content, threats or calls to harm, and
-anything about private individuals. Both the request and the generated captions are checked. Every meme
-has a report link; reported memes disappear. Memes are link-only (no public feed) and are deleted after 90 days.
+anything about private individuals. A blocklist runs first, then an LLM policy check on both the request and
+the generated captions. Every meme has a report link; reported memes are hidden immediately (edge cache expires
+within 10 minutes) and can be restored after review. Memes are link-only (no public feed) and deleted after 90 days.
 
 ## API
 
@@ -70,7 +73,7 @@ npx playwright test              # browser tests against the fake-AI server
 OPENSEARCH_URL=http://opensearch:9200 npx vitest run test/search.integration.test.ts   # real OpenSearch
 ```
 
-Deployment notes: [`deploy/README.md`](deploy/README.md). Design and plan: [`docs/superpowers/`](docs/superpowers/).
+Deployment: [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
 ## Credits
 

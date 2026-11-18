@@ -3,9 +3,9 @@ import { Layout } from "../Layout";
 import { api, type Stats } from "../lib/api";
 
 const STAGES = [
-  ["embed", "Titan embed (AWS ca-central-1)"],
-  ["search", "OpenSearch k-NN (server)"],
-  ["generate", "Qwen3 14B (GPU)"],
+  ["embed", "Titan embeddings (AWS Bedrock)"],
+  ["search", "OpenSearch vector search"],
+  ["generate", "Qwen3 14B captions (GPU inference)"],
   ["render", "Render"],
   ["total", "End to end"],
 ] as const;
@@ -46,7 +46,7 @@ export default function StatsPage() {
 
           <p className="mt-6 flex items-center gap-2 font-semibold">
             <span className={`size-3 rounded-full ${s.gpu === "up" ? "bg-ok" : s.gpu === "busy" ? "bg-[#ffb020]" : "bg-red"}`} aria-hidden="true" />
-            GPU {s.gpu === "up" ? "online" : s.gpu === "busy" ? "busy with other work" : "offline"} · {s.queueDepth} waiting in the queue
+            Inference {s.gpu === "up" ? "online" : s.gpu === "busy" ? "at capacity" : "offline"} · {s.queueDepth} waiting in the queue
           </p>
 
           <h2 className="mt-10 text-2xl font-extrabold">Latency per step</h2>

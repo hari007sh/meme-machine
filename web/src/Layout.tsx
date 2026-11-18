@@ -18,7 +18,7 @@ export function Layout({ children, hero }: { children: ReactNode; hero?: ReactNo
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-6 text-sm text-muted sm:flex-row sm:justify-between">
-          <p>Templates from Imgflip. Matched by Amazon Titan + OpenSearch, captioned by Qwen3 running on a dedicated GPU.</p>
+          <p>Templates from Imgflip. Built on Amazon Titan embeddings, OpenSearch vector search and a self-hosted Qwen3 model.</p>
           <p className="flex gap-4">
             <a href="https://github.com/hari007sh/meme-machine" className="hover:text-ink">GitHub</a>
             <a href="https://hookboard.net" className="hover:text-ink">Hookboard</a>

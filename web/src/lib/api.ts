@@ -25,7 +25,7 @@ async function send<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (res.status === 503) throw new ApiError("Busy, try again in a minute. The GPU is shared with other work.", "busy");
+    if (res.status === 503) throw new ApiError("Busy, try again in a minute. We're at capacity right now.", "busy");
     if (res.status === 422) throw new ApiError(`Can't make that one: ${data.reason ?? "it breaks the content rules"}.`, "refused");
     if (res.status === 429) throw new ApiError(data.message ?? "That's a lot of memes. Try again later.", "rate_limited");
     if (res.status === 400) throw new ApiError("Describe the situation in 3 to 280 characters.", "invalid");

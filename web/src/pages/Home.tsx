@@ -99,7 +99,7 @@ export default function Home() {
               {[
                 ["Understand", "Amazon Titan turns your sentence into a 1,024-number meaning vector."],
                 ["Match", "OpenSearch finds templates whose image and meaning sit closest to it."],
-                ["Write", "Qwen3 on a dedicated GPU picks one and writes each box."],
+                ["Write", "Our self-hosted Qwen3 model picks one and writes each box."],
                 ["Draw", "Text is fitted into the boxes and the meme gets its own share link."],
               ].map(([t, d], i) => (
                 <li key={t} className="rounded-2xl border border-line p-4">

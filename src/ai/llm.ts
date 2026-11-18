@@ -10,7 +10,7 @@ export type Llm = {
   health(): Promise<boolean>;
 };
 
-/** The GPU is busy (other GPU workloads), out of memory, or the PC is unreachable. Callers answer 503 + Retry-After. */
+/** Inference is at capacity, out of GPU memory, or unreachable. Callers answer 503 + Retry-After. */
 export class BusyError extends Error {
   override name = "BusyError";
 }
@@ -26,7 +26,7 @@ export function normaliseCaption(raw: Captioned, candidates: Candidate[]): Capti
 export function ollamaLlm(
   opts: { url?: string; model?: string; fetchImpl?: typeof fetch; timeoutMs?: number; cooldownMs?: number } = {},
 ): Llm {
-  const url = (opts.url ?? process.env.OLLAMA_URL ?? "http://<private-ip>:11434").replace(/\/$/, "");
+  const url = (opts.url ?? process.env.OLLAMA_URL ?? "http://localhost:11434").replace(/\/$/, "");
   const model = opts.model ?? process.env.MEME_LLM_MODEL ?? "qwen3:14b";
   const fetchImpl = opts.fetchImpl ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 45_000;
@@ -39,7 +39,7 @@ export function ollamaLlm(
   };
 
   async function chat<T>(system: string, user: string, format: object, temperature: number): Promise<T> {
-    if (Date.now() < busyUntil) throw new BusyError("The meme GPU is busy. Try again in a minute.");
+    if (Date.now() < busyUntil) throw new BusyError("Meme inference is at capacity. Try again in a minute.");
     let res: Response;
     try {
       res = await fetchImpl(`${url}/api/chat`, {
@@ -59,11 +59,11 @@ export function ollamaLlm(
         }),
       });
     } catch {
-      throw tripped("The meme GPU is busy or offline.");
+      throw tripped("Meme inference is at capacity or offline.");
     }
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      if (res.status >= 500 || /out of memory|cuda|busy/i.test(text)) throw tripped("The meme GPU is busy.");
+      if (res.status >= 500 || /out of memory|cuda|busy/i.test(text)) throw tripped("Meme inference is at capacity.");
       throw new Error(`Ollama returned ${res.status}`);
     }
     const data = (await res.json()) as { message?: { content?: string } };

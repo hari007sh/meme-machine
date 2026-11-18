@@ -5,7 +5,7 @@ import { api, ApiError, type Meme } from "./lib/api";
 const STAGES: { key: keyof Meme["timings"]; label: string }[] = [
   { key: "embed", label: "Titan embed" },
   { key: "search", label: "OpenSearch" },
-  { key: "generate", label: "Qwen3 · GPU" },
+  { key: "generate", label: "Qwen3 captions" },
   { key: "render", label: "Render" },
 ];
 
