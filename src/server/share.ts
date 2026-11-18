@@ -30,7 +30,13 @@ export function sharePage(meme: StoredMeme, base: string, indexHtml?: string): s
     "\\u003c",
   );
   const head = `${shareMeta(meme, base)}\n    <script>window.__MEME__=${data}</script>`;
-  if (indexHtml) return indexHtml.replace(/<title>.*?<\/title>/s, "").replace("</head>", `    ${head}\n  </head>`);
+  if (indexHtml) {
+    // Drop the SPA's generic title/description/OG/Twitter tags so crawlers see only this meme's.
+    const stripped = indexHtml
+      .replace(/<title>.*?<\/title>/s, "")
+      .replace(/<meta\s+(?:property|name)="(?:og:[^"]+|twitter:[^"]+|description)"[^>]*>\s*/g, "");
+    return stripped.replace("</head>", `    ${head}\n    <meta name="description" content="Made in seconds at memes.hookboard.net.">\n  </head>`);
+  }
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     ${head}
   </head><body><main><img src="${base}/i/${meme.id}.png" alt="meme"><p><a href="/">Make your own meme</a></p></main></body></html>`;

@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
@@ -74,6 +74,22 @@ describe("share page, image and reports", () => {
     expect((await request(app).post(`/api/memes/${body.id}/report`).send({})).status).toBe(202);
     expect((await request(app).get(`/m/${body.id}`)).status).toBe(410);
     expect((await request(app).get(`/i/${body.id}.png`)).status).toBe(410);
+  });
+
+  it("replaces the SPA's generic OG tags with the meme's own (one og:title only)", async () => {
+    const deps = fakeDeps();
+    const webDir = path.join(deps.imagesDir, "web");
+    mkdirSync(webDir);
+    writeFileSync(
+      path.join(webDir, "index.html"),
+      '<!doctype html><html><head><title>Meme Machine</title><meta name="description" content="generic"><meta property="og:title" content="Meme Machine"><meta property="og:description" content="generic"></head><body></body></html>',
+    );
+    const app = createApp({ ...deps, webDir, publicBaseUrl: base });
+    const { body } = await request(app).post("/api/memes").send({ situation: "one title please" });
+    const html = (await request(app).get(`/m/${body.id}`)).text;
+    expect(html.match(/property="og:title"/g)).toHaveLength(1);
+    expect(html).toContain('<meta property="og:title" content="30-minute standup / one Slack message">');
+    expect(html.match(/property="og:description"/g)).toHaveLength(1);
   });
 
   it("serves images even when the data directory is inside a dot-folder", async () => {
