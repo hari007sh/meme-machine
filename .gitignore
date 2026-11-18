@@ -1,0 +1,11 @@
+node_modules
+.env
+.env.*
+!.env.example
+dist
+web/dist
+data/templates
+data/memes
+*.db
+.superpowers
+.playwright-mcp
