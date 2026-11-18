@@ -68,7 +68,7 @@ export function createApp(opts: AppOptions) {
   app.post("/api/memes/:id/remix", rateLimited, async (req, res, next) => {
     try {
       const { texts } = RemixBody.parse(req.body);
-      res.status(201).json(toJson(await remixMeme(opts, req.params.id, texts)));
+      res.status(201).json(toJson(await remixMeme(opts, String(req.params.id), texts)));
     } catch (err) {
       next(err);
     }

@@ -1,0 +1,3 @@
+- **Now:** launch with ~100 classic templates, share pages, live stats.
+- **Next:** user-suggested templates (moderated), better box placement learned from popular memes.
+- **Later:** image search ("find memes that look like this"), multilingual captions tuned per language, a weekly "most remixed" page.
