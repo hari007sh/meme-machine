@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { BusyError } from "../src/ai/llm.js";
@@ -72,6 +74,15 @@ describe("share page, image and reports", () => {
     expect((await request(app).post(`/api/memes/${body.id}/report`).send({})).status).toBe(202);
     expect((await request(app).get(`/m/${body.id}`)).status).toBe(410);
     expect((await request(app).get(`/i/${body.id}.png`)).status).toBe(410);
+  });
+
+  it("serves images even when the data directory is inside a dot-folder", async () => {
+    const deps = fakeDeps();
+    const dotDir = path.join(deps.imagesDir, ".data");
+    mkdirSync(dotDir);
+    const app = createApp({ ...deps, imagesDir: dotDir, publicBaseUrl: base });
+    const { body } = await request(app).post("/api/memes").send({ situation: "dot folders are sneaky" });
+    expect((await request(app).get(`/i/${body.id}.png`)).status).toBe(200);
   });
 
   it("404s unknown ids and remixes known ones", async () => {

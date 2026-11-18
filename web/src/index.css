@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Anton";
+  src: url("/fonts/Anton-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@theme {
+  --color-red: #e8412e;
+  --color-red-deep: #c42f1e;
+  --color-ink: #000000;
+  --color-muted: #5f5f5f;
+  --color-line: #e6e6e6;
+  --color-wash: #f6f6f4;
+  --color-ok: #1e9e5a;
+  --font-meme: "Anton", Impact, "Arial Narrow", sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body { @apply bg-white font-sans text-ink antialiased; }
+  :focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
+}
+
+/* Classic meme caption: white fill, black outline. Used once, for the headline. */
+@utility meme-caption {
+  font-family: var(--font-meme);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  -webkit-text-stroke: 0.06em #000;
+  paint-order: stroke fill;
+  text-shadow: 0 0.04em 0 #000;
+}
+
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition
+    disabled:cursor-progress disabled:opacity-60;
+}
+@utility btn-dark {
+  @apply btn bg-ink text-white hover:bg-[#262626];
+}
+@utility btn-light {
+  @apply btn border-2 border-ink bg-white text-ink hover:bg-wash;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

@@ -9,3 +9,6 @@ data/memes
 *.db
 .superpowers
 .playwright-mcp
+.e2e-data
+test-results
+playwright-report

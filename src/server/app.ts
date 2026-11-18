@@ -104,7 +104,7 @@ export function createApp(opts: AppOptions) {
     const m = ID.test(id) ? opts.store.getMeme(id) : null;
     if (!m) return void res.status(404).end();
     if (m.hidden) return void res.status(410).end();
-    res.set("Cache-Control", IMMUTABLE).type("image/png").sendFile(path.resolve(opts.imagesDir, `${id}.png`));
+    res.set("Cache-Control", IMMUTABLE).type("image/png").sendFile(path.resolve(opts.imagesDir, `${id}.png`), { dotfiles: "allow" });
   });
 
   app.get("/m/:id", (req, res) => {
