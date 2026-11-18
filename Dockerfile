@@ -16,7 +16,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/src ./src
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/assets ./assets
-COPY --from=build /app/data/box-overrides.json ./data/box-overrides.json
+COPY --from=build /app/data/box-overrides.json /app/data/blocklist.txt ./data/
 COPY --from=build /app/web/dist ./web/dist
 COPY BUILDLOG.md ROADMAP.md ./
 RUN mkdir -p /data && chown node:node /data

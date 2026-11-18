@@ -1,5 +1,5 @@
 import { Client } from "@opensearch-project/opensearch";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ollamaLlm } from "../ai/llm.js";
@@ -18,7 +18,7 @@ const imagesDir = path.join(dataDir, "memes");
 mkdirSync(imagesDir, { recursive: true });
 
 const store = openStore(path.join(dataDir, "memes.db"));
-const queue = createQueue(2, 20);
+const queue = createQueue(2, 20, 20_000);
 const fake = process.env.MEME_FAKE_AI === "1";
 
 let ai: Pick<PipelineDeps, "embedder" | "llm" | "search" | "loadTemplateImage">;
@@ -36,10 +36,21 @@ if (fake) {
   templateCount = async () => Number((await os.count({ index: INDEX })).body.count);
 }
 
-const deps: PipelineDeps = { ...ai, store, imagesDir, queue };
+const blocklistPath = path.resolve(here, "../../data/blocklist.txt");
+const blocklist = existsSync(blocklistPath)
+  ? readFileSync(blocklistPath, "utf8")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"))
+      .map((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}s?\\b`, "i"))
+  : [];
+
+const deps: PipelineDeps = { ...ai, store, imagesDir, queue, deadlineMs: 45_000, blocklist };
 const app = createApp({
   ...deps,
   rateLimit: Number(process.env.MEME_RATE_LIMIT ?? 10),
+  dailyCap: Number(process.env.MEME_DAILY_CAP ?? 2000),
+  adminToken: process.env.ADMIN_TOKEN || undefined,
   webDir: path.resolve(here, "../../web/dist"),
   extraRoutes: (a) => statsRoutes(a, { store, llm: ai.llm, queue, logPath: path.resolve(here, "../../BUILDLOG.md"), roadmapPath: path.resolve(here, "../../ROADMAP.md"), templateCount }),
 });

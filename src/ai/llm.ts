@@ -24,14 +24,22 @@ export function normaliseCaption(raw: Captioned, candidates: Candidate[]): Capti
 }
 
 export function ollamaLlm(
-  opts: { url?: string; model?: string; fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+  opts: { url?: string; model?: string; fetchImpl?: typeof fetch; timeoutMs?: number; cooldownMs?: number } = {},
 ): Llm {
   const url = (opts.url ?? process.env.OLLAMA_URL ?? "http://<private-ip>:11434").replace(/\/$/, "");
   const model = opts.model ?? process.env.MEME_LLM_MODEL ?? "qwen3:14b";
   const fetchImpl = opts.fetchImpl ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 45_000;
+  const cooldownMs = opts.cooldownMs ?? 30_000;
+  // After the GPU says busy (or is unreachable), fail fast for a while instead of making every visitor wait out a timeout.
+  let busyUntil = 0;
+  const tripped = (msg: string) => {
+    busyUntil = Date.now() + cooldownMs;
+    return new BusyError(msg);
+  };
 
   async function chat<T>(system: string, user: string, format: object, temperature: number): Promise<T> {
+    if (Date.now() < busyUntil) throw new BusyError("The meme GPU is busy. Try again in a minute.");
     let res: Response;
     try {
       res = await fetchImpl(`${url}/api/chat`, {
@@ -51,11 +59,11 @@ export function ollamaLlm(
         }),
       });
     } catch {
-      throw new BusyError("The meme GPU is busy or offline.");
+      throw tripped("The meme GPU is busy or offline.");
     }
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      if (res.status >= 500 || /out of memory|cuda|busy/i.test(text)) throw new BusyError("The meme GPU is busy.");
+      if (res.status >= 500 || /out of memory|cuda|busy/i.test(text)) throw tripped("The meme GPU is busy.");
       throw new Error(`Ollama returned ${res.status}`);
     }
     const data = (await res.json()) as { message?: { content?: string } };

@@ -9,7 +9,7 @@ export type Stats = {
   last24h: number;
   latency: Record<keyof Timings, { p50: number; p95: number }>;
   queueDepth: number;
-  gpu: "up" | "down";
+  gpu: "up" | "busy" | "down";
 };
 export type LogEntry = { date: string; title: string; body: string };
 

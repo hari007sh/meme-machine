@@ -6,17 +6,29 @@ const fontsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 let registered = false;
 
 /** Anton for the classic meme look; Noto families fill in accents and Devanagari; system fonts (e.g. Noto Color Emoji in the Docker image) cover emoji. */
-export const FONT_STACK = "MemeDisplay, MemeLatin, MemeDevanagari, sans-serif";
+export const FONT_STACK = "MemeDisplay, MemeLatin, MemeDevanagari, MemeTamil, MemeTelugu, MemeBengali, sans-serif";
 
 export function registerFonts(): void {
   if (registered) return;
   GlobalFonts.registerFromPath(path.join(fontsDir, "Anton-Regular.ttf"), "MemeDisplay");
   GlobalFonts.registerFromPath(path.join(fontsDir, "NotoSans.ttf"), "MemeLatin");
   GlobalFonts.registerFromPath(path.join(fontsDir, "NotoSansDevanagari.ttf"), "MemeDevanagari");
+  GlobalFonts.registerFromPath(path.join(fontsDir, "NotoSansTamil.ttf"), "MemeTamil");
+  GlobalFonts.registerFromPath(path.join(fontsDir, "NotoSansTelugu.ttf"), "MemeTelugu");
+  GlobalFonts.registerFromPath(path.join(fontsDir, "NotoSansBengali.ttf"), "MemeBengali");
   registered = true;
 }
 
 export const LINE_HEIGHT = 1.1;
+
+/** Scripts the bundled fonts (plus the emoji font in the image) can draw. Anything else would render as tofu. */
+const UNSUPPORTED =
+  /[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}\p{Script=Devanagari}\p{Script=Tamil}\p{Script=Telugu}\p{Script=Bengali}\p{Extended_Pictographic}\u200d\ufe0f]/gu;
+const CJK_COMMON = /[\u3000-\u303f\uff00-\uffef]/g;
+
+export function sanitizeText(text: string): string {
+  return text.replace(UNSUPPORTED, "").replace(CJK_COMMON, "").replace(/\s+/g, " ").trim();
+}
 
 function wrap(ctx: SKRSContext2D, words: string[], maxWidth: number): string[] {
   const lines: string[] = [];

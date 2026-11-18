@@ -49,6 +49,7 @@ export function statsRoutes(app: Express, deps: StatsDeps): void {
         return [s, { p50: percentile(xs, 50), p95: percentile(xs, 95) }];
       }),
     );
+    const recentBusy = deps.store.counts(new Date(Date.now() - 120_000).toISOString()).busy > 0;
     const [gpu, templates] = await Promise.all([deps.llm.health(), deps.templateCount?.().catch(() => 0) ?? Promise.resolve(0)]);
     const body = {
       memes: all.meme,
@@ -59,7 +60,7 @@ export function statsRoutes(app: Express, deps: StatsDeps): void {
       last24h: day.meme,
       latency,
       queueDepth: deps.queue.depth(),
-      gpu: gpu ? "up" : "down",
+      gpu: !gpu ? "down" : recentBusy ? "busy" : "up",
     };
     cache = { at: Date.now(), body };
     res.json(body);

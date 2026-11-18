@@ -1,6 +1,6 @@
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import type { Template } from "../domain.js";
-import { FONT_STACK, fitText, LINE_HEIGHT, registerFonts } from "./fit.js";
+import { FONT_STACK, fitText, LINE_HEIGHT, registerFonts, sanitizeText } from "./fit.js";
 
 export const WATERMARK = "memes.hookboard.net";
 
@@ -19,7 +19,7 @@ export async function renderMeme(template: Template, texts: string[], imageBytes
 
   const scale = Math.max(1, Math.min(W, H) / 500);
   template.boxes.forEach((box, i) => {
-    const text = texts[i] ?? "";
+    const text = sanitizeText(texts[i] ?? "");
     if (!text.trim()) return;
     const bw = box.w * W;
     const bh = box.h * H;

@@ -45,8 +45,8 @@ export default function StatsPage() {
           </dl>
 
           <p className="mt-6 flex items-center gap-2 font-semibold">
-            <span className={`size-3 rounded-full ${s.gpu === "up" ? "bg-ok" : "bg-red"}`} aria-hidden="true" />
-            GPU {s.gpu === "up" ? "online" : "offline or busy"} · {s.queueDepth} waiting in the queue
+            <span className={`size-3 rounded-full ${s.gpu === "up" ? "bg-ok" : s.gpu === "busy" ? "bg-[#ffb020]" : "bg-red"}`} aria-hidden="true" />
+            GPU {s.gpu === "up" ? "online" : s.gpu === "busy" ? "busy with other work" : "offline"} · {s.queueDepth} waiting in the queue
           </p>
 
           <h2 className="mt-10 text-2xl font-extrabold">Latency per step</h2>

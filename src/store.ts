@@ -8,6 +8,7 @@ export type Store = {
   saveMeme(r: MemeRecord, template: Template): void;
   getMeme(id: string): StoredMeme | null;
   hideMeme(id: string): boolean;
+  unhideMeme(id: string): boolean;
   logEvent(e: { kind: EventKind; timings?: Timings }): void;
   counts(sinceIso?: string): Record<EventKind, number> & { memes: number };
   timings(limit?: number): Timings[];
@@ -54,6 +55,9 @@ export function openStore(file: string): Store {
     },
     hideMeme(id) {
       return Number(db.prepare("UPDATE memes SET hidden = 1 WHERE id = ?").run(id).changes) > 0;
+    },
+    unhideMeme(id) {
+      return Number(db.prepare("UPDATE memes SET hidden = 0 WHERE id = ?").run(id).changes) > 0;
     },
     logEvent(e) {
       insertEvent.run(e.kind, new Date().toISOString(), e.timings ? JSON.stringify(e.timings) : null);

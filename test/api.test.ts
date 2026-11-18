@@ -56,7 +56,7 @@ describe("POST /api/memes", () => {
 });
 
 describe("share page, image and reports", () => {
-  it("serves OG tags, an immutable PNG, and 410 after a report", async () => {
+  it("serves OG tags, a short-cached PNG, and 410 after a report", async () => {
     const app = createApp({ ...fakeDeps(), publicBaseUrl: base });
     const { body } = await request(app).post("/api/memes").send({ situation: "when <the> standup \"could\" be an email" });
 
@@ -69,7 +69,7 @@ describe("share page, image and reports", () => {
     const img = await request(app).get(`/i/${body.id}.png`);
     expect(img.status).toBe(200);
     expect(img.headers["content-type"]).toBe("image/png");
-    expect(img.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+    expect(img.headers["cache-control"]).toBe("public, max-age=3600, s-maxage=600");
 
     expect((await request(app).post(`/api/memes/${body.id}/report`).send({})).status).toBe(202);
     expect((await request(app).get(`/m/${body.id}`)).status).toBe(410);

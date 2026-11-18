@@ -1,0 +1,16 @@
+# One word or phrase per line, matched case-insensitively on word boundaries. Extend as needed.
+# Seed: widely recognised slurs. The LLM check catches the rest; this list is the floor.
+nigger
+nigga
+faggot
+fag
+kike
+spic
+chink
+wetback
+retard
+tranny
+coon
+gook
+raghead
+paki

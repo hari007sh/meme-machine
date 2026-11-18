@@ -15,7 +15,26 @@ export type PipelineDeps = {
   imagesDir: string;
   loadTemplateImage: (t: Template) => Promise<Buffer>;
   queue: Queue;
+  /** Whole-request budget (default 45 s). Past it the visitor gets "busy" instead of a gateway timeout. */
+  deadlineMs?: number;
+  /** Words refused outright, before any model call (data/blocklist.txt). */
+  blocklist?: RegExp[];
 };
+
+function withDeadline<T>(ms: number, work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new BusyError("That took too long. The GPU is busy.")), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
+function checkBlocklist(deps: PipelineDeps, text: string): void {
+  if (deps.blocklist?.some((re) => re.test(text))) {
+    deps.store.logEvent({ kind: "refused" });
+    throw new RefusedError("contains a word that isn't allowed");
+  }
+}
 
 export class RefusedError extends Error {
   override name = "RefusedError";
@@ -27,6 +46,7 @@ export class RefusedError extends Error {
 const now = () => performance.now();
 
 async function checkSafe(deps: PipelineDeps, text: string): Promise<void> {
+  checkBlocklist(deps, text);
   const verdict = await deps.queue.run(() => deps.llm.safety(text));
   if (!verdict.ok) {
     deps.store.logEvent({ kind: "refused" });
@@ -51,6 +71,16 @@ async function finish(deps: PipelineDeps, situation: string, template: Template,
 export async function makeMeme(deps: PipelineDeps, situation: string, opts: { exclude?: string[] } = {}): Promise<MemeRecord> {
   const start = now();
   try {
+    return await withDeadline(deps.deadlineMs ?? 45_000, generate(deps, situation, opts, start));
+  } catch (err) {
+    if (err instanceof BusyError) deps.store.logEvent({ kind: "busy" });
+    else if (!(err instanceof RefusedError)) deps.store.logEvent({ kind: "error" });
+    throw err;
+  }
+}
+
+async function generate(deps: PipelineDeps, situation: string, opts: { exclude?: string[] }, start: number): Promise<MemeRecord> {
+  {
     await checkSafe(deps, situation);
 
     const e0 = now();
@@ -64,15 +94,11 @@ export async function makeMeme(deps: PipelineDeps, situation: string, opts: { ex
 
     const g0 = now();
     const captioned = normaliseCaption(await deps.queue.run(() => deps.llm.caption(situation, candidates)), candidates);
-    const generate = now() - g0;
+    const gen = now() - g0;
 
     await checkSafe(deps, captioned.texts.join("\n"));
     const template = candidates.find((c) => c.template.id === captioned.templateId)!.template;
-    return await finish(deps, situation, template, captioned.texts, { embed: Math.round(embed), search: Math.round(search), generate: Math.round(generate) }, start);
-  } catch (err) {
-    if (err instanceof BusyError) deps.store.logEvent({ kind: "busy" });
-    else if (!(err instanceof RefusedError)) deps.store.logEvent({ kind: "error" });
-    throw err;
+    return await finish(deps, situation, template, captioned.texts, { embed: Math.round(embed), search: Math.round(search), generate: Math.round(gen) }, start);
   }
 }
 
@@ -85,8 +111,10 @@ export async function remixMeme(deps: PipelineDeps, id: string, texts: string[])
   const fitted = texts.slice(0, n).map((s) => s.trim());
   while (fitted.length < n) fitted.push("");
   try {
-    await checkSafe(deps, fitted.join("\n"));
-    return await finish(deps, original.situation, original.template, fitted, { embed: 0, search: 0, generate: 0 }, start);
+    return await withDeadline(
+      deps.deadlineMs ?? 45_000,
+      checkSafe(deps, fitted.join("\n")).then(() => finish(deps, original.situation, original.template, fitted, { embed: 0, search: 0, generate: 0 }, start)),
+    );
   } catch (err) {
     if (err instanceof BusyError) deps.store.logEvent({ kind: "busy" });
     throw err;
